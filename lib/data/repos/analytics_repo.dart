@@ -16,20 +16,32 @@ class AnalyticsRepo implements IAnalyticsRepo {
   Future<int> getTotalBudget(String seasonId) async {
     final db = await _db.database;
     final result = await db.rawQuery(
-      'SELECT COALESCE(SUM(planned_budget), 0) as total FROM categories WHERE season_id = ?',
+      'SELECT budget_limit FROM seasons WHERE id = ?',
+      [seasonId],
+    );
+    if (result.isEmpty) return 0;
+    return (result.first['budget_limit'] as int?) ?? 0;
+  }
+
+  Future<int> getPlannedTotal(String seasonId) async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT COALESCE(SUM(target_price * quantity), 0) as total FROM items WHERE season_id = ? AND status != \'dropped\'',
       [seasonId],
     );
     return (result.first['total'] as int?) ?? 0;
   }
 
-  /// Tổng giá trị dự kiến của tất cả món đồ (target_price * quantity)
-  Future<int> getPlannedTotal(String seasonId) async {
+  /// Tiết kiệm thực tế (SUM(TargetPrice * Qty - ActualAmount)) trên các món đã mua
+  Future<int> getSavings(String seasonId) async {
     final db = await _db.database;
-    final result = await db.rawQuery(
-      'SELECT COALESCE(SUM(target_price * quantity), 0) as total FROM items WHERE season_id = ? AND status != "dropped"',
-      [seasonId],
-    );
-    return (result.first['total'] as int?) ?? 0;
+    final result = await db.rawQuery('''
+      SELECT COALESCE(SUM(i.target_price * i.quantity - e.amount), 0) as savings
+      FROM items i
+      JOIN expenses e ON e.item_id = i.id
+      WHERE i.season_id = ? AND i.status = 'bought'
+    ''', [seasonId]);
+    return (result.first['savings'] as int?) ?? 0;
   }
 
   /// Thống kê theo cửa hàng để tối ưu lộ trình mua sắm

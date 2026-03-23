@@ -35,7 +35,7 @@ class MainDashboardScreen extends StatelessWidget {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(season?.name ?? 'Chưa có kỳ nào',
                     style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentGold, fontSize: 16)),
-                Text('Còn ${vm.daysUntilTet} ngày đến Tết',
+                Text(_getStatusText(vm.seasonDateStatus),
                     style: TextStyle(fontSize: 11, color: AppColors.accentGold.withOpacity(0.8))),
               ]),
             ]),
@@ -48,16 +48,6 @@ class MainDashboardScreen extends StatelessWidget {
                 ));
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: AppColors.accentGold),
-              onPressed: () {
-                if (seasonVm.activeSeason != null) {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => const BestDealAlertsScreen()
-                  )).then((_) => vm.load(seasonVm.activeSeason!));
-                }
-              },
-            ),
           ],
         ),
       ),
@@ -65,12 +55,7 @@ class MainDashboardScreen extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : season == null
               ? _emptyState(context)
-              : Builder(builder: (context) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    vm.setSeasonName(season.name);
-                  });
-                  return _content(context, vm, season);
-                }),
+              : _content(context, vm, season),
     );
   }
 
@@ -94,7 +79,7 @@ class MainDashboardScreen extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        if (season.id.isNotEmpty) await vm.load(season.id);
+        if (season.id.isNotEmpty) await vm.load(season.id, seasonName: season.name, startDate: season.startDate, endDate: season.endDate);
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -112,20 +97,41 @@ class MainDashboardScreen extends StatelessWidget {
             const SizedBox(height: 24),
             // 3. Stats Rows
             Row(children: [
-              Expanded(child: _statCard('Đã chi', vm.totalSpentFormatted, Icons.shopping_cart, AppColors.primary)),
+              Expanded(child: _statCard('Ngân sách', vm.totalBudgetFormatted, Icons.account_balance_wallet_outlined, Colors.indigo)),
               const SizedBox(width: 12),
-              Expanded(child: _statCard('Cần mua', '${vm.pendingItems} món', Icons.list_alt, AppColors.warning)),
+              Expanded(child: _statCard('Đã chi', vm.totalSpentFormatted, Icons.shopping_cart, AppColors.primary)),
             ]),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: _statCard('Tiết kiệm', vm.budgetVarianceFormatted, Icons.savings_outlined, AppColors.success)),
+              Expanded(child: _statCard(
+                vm.budgetVariance >= 0 ? 'Tiết kiệm' : 'Vượt mức', 
+                vm.budgetVarianceFormatted, 
+                Icons.savings_outlined, 
+                vm.budgetVariance >= 0 ? AppColors.success : AppColors.error
+              )),
               const SizedBox(width: 12),
-              Expanded(child: _statCard('Giao dịch', '${vm.recentExpenses.length} gần đây', Icons.receipt_long, Colors.teal)),
+              Expanded(child: _statCard('Cần mua', '${vm.pendingItems} món', Icons.list_alt, AppColors.warning)),
             ]),
 
             const SizedBox(height: 32),
             // 4. Analysis Charts
-            const Text('Phân tích chi tiêu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Phân tích chi tiêu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+                TextButton.icon(
+                  onPressed: () {
+                    if (season.id.isNotEmpty) {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => CategoryBudgetScreen(seasonId: season.id)
+                      )).then((_) => vm.load(season.id));
+                    }
+                  },
+                  icon: const Icon(Icons.settings_outlined, size: 16),
+                  label: const Text('Hạng mục', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             SpendingBarChart(data: vm.last7Days),
             const SizedBox(height: 20),
@@ -227,6 +233,16 @@ class MainDashboardScreen extends StatelessWidget {
       },
     ),
   );
+
+  String _getStatusText(Map<String, dynamic> status) {
+    final type = status['type'];
+    final days = status['days'];
+    if (type == 'none') return 'Chưa hẹn ngày';
+    if (type == 'before') return 'Còn $days ngày đến Tết';
+    if (type == 'during') return 'Tết đã đến hiện tại!';
+    if (type == 'after') return 'Tết đã qua $days ngày';
+    return '';
+  }
 
   String _fmt(int v) => v >= 1000000 ? '${(v / 1000000).toStringAsFixed(1)}tr' : '${(v / 1000).round()}k';
 }

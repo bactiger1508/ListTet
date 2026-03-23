@@ -147,8 +147,17 @@ class _DealCard extends StatelessWidget {
             Text(_fmt(item.currentPrice!),
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _color)),
         ]),
-        if (item.savings > 0)
-          Text('Tiết kiệm: ${_fmt(item.savings)}', style: const TextStyle(fontSize: 12, color: Colors.green)),
+        if (item.savings != 0)
+          Text(
+            item.savings > 0 
+              ? 'Tiết kiệm: ${_fmt(item.savings)}' 
+              : 'Vượt mức: ${_fmt(item.savings.abs())}', 
+            style: TextStyle(
+              fontSize: 12, 
+              fontWeight: FontWeight.w500,
+              color: item.savings > 0 ? Colors.green : Colors.red
+            )
+          ),
       ])),
     ]),
   );

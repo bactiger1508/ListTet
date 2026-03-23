@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:person_app/viewmodels/season_viewmodel.dart';
 import 'package:person_app/viewmodels/shopping_viewmodel.dart';
 import 'package:person_app/viewmodels/photo_viewmodel.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class AddItemScreen extends StatefulWidget {
   final String seasonId;
@@ -32,11 +31,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
   bool _isSaving = false;
   File? _pickedImage;
   
-  // Real Speech logic
-  late stt.SpeechToText _speech;
-  bool _isListening = false;
-  String _lastWords = '';
-  
   // Re-add missing repo import if accidentally removed (it was on line 8)
   // Actually let's just make sure the imports are correct at the top.
 
@@ -44,7 +38,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final categories = context.read<SeasonViewModel>().categories;
       if (categories.isNotEmpty) setState(() => _selectedCategoryId = categories.first.id);
@@ -134,11 +127,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         title: const Text('Thêm món cần mua', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMain)),
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.textMain), onPressed: () => Navigator.pop(context)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.mic_none, color: AppColors.primary),
-            onPressed: () => _startVoiceInput(),
-            tooltip: 'Nhập bằng giọng nói',
-          ),
           _isSaving
             ? const Padding(padding: EdgeInsets.all(16), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)))
             : const SizedBox.shrink()
@@ -262,113 +250,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
   }
 
 
-  void _startVoiceInput() async {
-    if (_isListening) {
-      await _speech.stop();
-      setState(() => _isListening = false);
-      return;
-    }
-
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'done') setState(() => _isListening = false);
-        debugPrint('Speech Status: $status');
-      },
-      onError: (error) {
-        setState(() => _isListening = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi Micro: ${error.errorMsg}')));
-      },
-    );
-
-    if (available) {
-      setState(() => _isListening = true);
-      _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _lastWords = result.recognizedWords;
-            if (result.finalResult) {
-              _parseAndFill(_lastWords);
-              _isListening = false;
-            }
-          });
-        },
-        localeId: 'vi_VN',
-      );
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đang lắng nghe... Hãy nói: "Sắm [tên món] [số lượng] [giá]"'),
-          backgroundColor: AppColors.primary,
-          duration: Duration(seconds: 4),
-        )
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thiết bị không hỗ trợ giọng nói hoặc bị từ chối quyền.')));
-    }
-  }
-
   void _parseAndFill(String text) {
-    if (text.isEmpty) return;
-    String processed = text.toLowerCase();
-    
-    // 1. Tách Giá (Tìm các từ khóa nghìn, triệu, k, tr, hoặc dãy số dài)
-    int? foundPrice;
-    final priceRegex = RegExp(r'(\d+)\s*(triệu|tr|nghìn|ngàn|k)');
-    final priceMatch = priceRegex.firstMatch(processed);
-    
-    if (priceMatch != null) {
-      int base = int.parse(priceMatch.group(1)!);
-      String unit = priceMatch.group(2)!;
-      if (unit.contains('triệu') || unit == 'tr') foundPrice = base * 1000000;
-      else if (unit.contains('nghìn') || unit.contains('ngàn') || unit == 'k') foundPrice = base * 1000;
-      
-      // Xóa phần giá khỏi text để tìm tên và số lượng dễ hơn
-      processed = processed.replaceFirst(priceMatch.group(0)!, '');
-    } else {
-      // Tìm số thuần túy nếu không có đơn vị
-      final numRegex = RegExp(r'(\d{4,})'); // Dãy số > 4 chữ số thường là giá
-      final numMatch = numRegex.firstMatch(processed);
-      if (numMatch != null) {
-        foundPrice = int.parse(numMatch.group(1)!);
-        processed = processed.replaceFirst(numMatch.group(1)!, '');
-      }
-    }
-
-    // 2. Tách Số lượng (Tìm số nhỏ < 100 đi kèm đơn vị ký, cái, giỏ...)
-    int foundQty = 1;
-    final qtyRegex = RegExp(r'(\d+)\s*(kg|ký|chiếc|cái|món|hộp|giỏ|thùng|lít|con)');
-    final qtyMatch = qtyRegex.firstMatch(processed);
-    if (qtyMatch != null) {
-      foundQty = int.parse(qtyMatch.group(1)!);
-      processed = processed.replaceFirst(qtyMatch.group(0)!, '');
-    } else {
-      // Tìm số đứng một mình nếu nó nhỏ (VD: mua 5 bánh chưng)
-      final simpleQtyRegex = RegExp(r'\b(\d{1,2})\b');
-      final simpleQtyMatch = simpleQtyRegex.firstMatch(processed);
-      if (simpleQtyMatch != null) {
-        foundQty = int.parse(simpleQtyMatch.group(1)!);
-        processed = processed.replaceFirst(simpleQtyMatch.group(1)!, '');
-      }
-    }
-
-    // 3. Tên món (Phần còn lại sau khi bỏ các từ khóa sắm, mua, lấy...)
-    String name = processed
-      .replaceAll('sắm', '')
-      .replaceAll('mua', '')
-      .replaceAll('lấy', '')
-      .replaceAll('thêm', '')
-      .trim();
-
-    if (name.isNotEmpty) {
-      setState(() {
-        _nameCtrl.text = name[0].toUpperCase() + name.substring(1);
-        if (foundPrice != null) _priceCtrl.text = _formatPriceInput(foundPrice!);
-        _qty = foundQty;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã nhận diện: "$text"'), backgroundColor: Colors.green)
-      );
-    }
+    // Hidden logic for potential future use
   }
 
   String _formatPriceInput(int p) {

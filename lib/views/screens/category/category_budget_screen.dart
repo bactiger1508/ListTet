@@ -6,7 +6,8 @@ import 'package:person_app/data/models/category.dart';
 import 'package:person_app/theme/app_colors.dart';
 
 class CategoryBudgetScreen extends StatefulWidget {
-  const CategoryBudgetScreen({super.key});
+  final String? seasonId;
+  const CategoryBudgetScreen({super.key, this.seasonId});
   @override
   State<CategoryBudgetScreen> createState() => _CategoryBudgetScreenState();
 }
@@ -16,7 +17,7 @@ class _CategoryBudgetScreenState extends State<CategoryBudgetScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final sid = context.read<SeasonViewModel>().activeSeason;
+      final sid = widget.seasonId ?? context.read<SeasonViewModel>().activeSeason;
       if (sid != null) context.read<CategoryViewModel>().load(sid);
     });
   }
@@ -51,18 +52,41 @@ class _CategoryBudgetScreenState extends State<CategoryBudgetScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                  _summaryItem('Tổng ngân sách', _fmt(vm.totalPlannedBudget)),
+                  _summaryItem('Tổng ngân sách', _fmt(seasonVm.currentSeason?.budgetLimit ?? 0)),
                   Container(width: 1, height: 40, color: Colors.white24),
-                  _summaryItem('Đã chi', _fmt(vm.totalSpent)),
+                  _summaryItem('Đã phân bổ', _fmt(vm.totalPlannedBudget)),
                   Container(width: 1, height: 40, color: Colors.white24),
-                  _summaryItem('Còn lại', _fmt(vm.totalPlannedBudget - vm.totalSpent)),
+                  _summaryItem('Còn lại', _fmt((seasonVm.currentSeason?.budgetLimit ?? 0) - vm.totalSpent)),
                 ]),
               ),
 
               // Category list
               Expanded(
                 child: vm.categories.isEmpty
-                    ? const Center(child: Text('Chưa có hạng mục', style: TextStyle(color: AppColors.textMuted)))
+                    ? Center(
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                            child: const Icon(Icons.category_outlined, size: 64, color: AppColors.primary),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text('Chưa có hạng mục nào', style: TextStyle(color: AppColors.accentGold, fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          const Text('Thêm hạng mục để phân bổ ngân sách.', style: TextStyle(color: AppColors.textMuted)),
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.add, color: AppColors.primary),
+                            label: const Text('Thêm hạng mục', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentGold,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            ),
+                            onPressed: () => _addCategory(context, vm, seasonVm),
+                          )
+                        ]),
+                      )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: vm.categories.length,

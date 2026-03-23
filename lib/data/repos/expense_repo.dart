@@ -81,4 +81,15 @@ class ExpenseRepo implements IExpenseRepo {
     final db = await _db.database;
     await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
   }
+  Future<Expense?> findByItemId(String itemId) async {
+    final db = await _db.database;
+    final maps = await db.query('expenses', where: 'item_id = ?', whereArgs: [itemId]);
+    if (maps.isEmpty) return null;
+    return Expense.fromMap(maps.first);
+  }
+
+  Future<void> deleteByItemId(String itemId) async {
+    final db = await _db.database;
+    await db.delete('expenses', where: 'item_id = ?', whereArgs: [itemId]);
+  }
 }

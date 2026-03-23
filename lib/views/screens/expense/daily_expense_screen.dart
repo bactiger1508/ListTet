@@ -5,6 +5,7 @@ import 'package:person_app/viewmodels/season_viewmodel.dart';
 import 'package:person_app/viewmodels/shopping_viewmodel.dart';
 import 'package:person_app/data/models/expense.dart';
 import 'package:person_app/data/models/item.dart';
+import 'package:person_app/viewmodels/photo_viewmodel.dart';
 import 'package:person_app/theme/app_colors.dart';
 import 'package:person_app/views/screens/expense/expense_transaction_detail_screen.dart';
 import 'package:person_app/views/screens/expense/add_edit_expense_screen.dart';
@@ -29,6 +30,7 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
   Widget build(BuildContext context) {
     final vm = context.watch<ExpenseViewModel>();
     final seasonVm = context.watch<SeasonViewModel>();
+    final photoVm = context.watch<PhotoViewModel>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -64,19 +66,24 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
                           shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                           itemCount: items.length,
                           separatorBuilder: (context, index) => const Divider(height: 0, color: AppColors.borderSubtle, indent: 16),
-                          itemBuilder: (context, j) => _ExpenseTile(
-                            expense: items[j],
-                            onDelete: () => _confirmDelete(context, items[j]),
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(
-                                builder: (_) => ExpenseTransactionDetailScreen(expenseId: items[j].id)
-                              )).then((_) {
-                                if (context.mounted) {
-                                  context.read<ExpenseViewModel>().load(seasonVm.activeSeason!);
-                                }
-                              });
-                            },
-                          ),
+                          itemBuilder: (context, j) {
+                            final exp = items[j];
+                            final receiptPhoto = photoVm.receipts.where((p) => p.expenseId == exp.id).firstOrNull;
+                            return _ExpenseTile(
+                              expense: exp,
+                              receiptPhotoPath: receiptPhoto?.localPath,
+                              onDelete: () => _confirmDelete(context, exp),
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => ExpenseTransactionDetailScreen(expenseId: exp.id)
+                                )).then((_) {
+                                  if (context.mounted) {
+                                    context.read<ExpenseViewModel>().load(seasonVm.activeSeason!);
+                                  }
+                                });
+                              },
+                            );
+                          },
                         ),
                       ),
                     ]);
@@ -135,13 +142,42 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
     );
   }
 
-  Widget _empty() => const Center(
+  Widget _empty() => Center(
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.receipt_long, size: 64, color: AppColors.textMuted),
-      SizedBox(height: 12),
-      Text('Chưa có chi tiêu nào', style: TextStyle(color: AppColors.textMain, fontSize: 16)),
-      SizedBox(height: 4),
-      Text('Nhấn + để thêm chi tiêu', style: TextStyle(color: AppColors.textMuted)),
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.receipt_long, size: 64, color: AppColors.primary),
+      ),
+      const SizedBox(height: 24),
+      const Text('Chưa có chi tiêu nào', style: TextStyle(color: AppColors.accentGold, fontSize: 18, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      const Text('Ghi chép lại các khoản chi để dễ kiểm soát hơn.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textMuted)),
+      const SizedBox(height: 32),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.add, color: AppColors.primary),
+        label: const Text('Thêm khoản chi', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accentGold,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        onPressed: () {
+          final seasonVm = context.read<SeasonViewModel>();
+          final sid = seasonVm.activeSeason;
+          if (sid != null) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => AddEditExpenseScreen(
+                seasonId: sid,
+                categoryId: seasonVm.firstCategoryId,
+                onSaved: () => context.read<ExpenseViewModel>().load(sid),
+              )));
+          }
+        },
+      )
     ]),
   );
 
@@ -150,9 +186,10 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
 
 class _ExpenseTile extends StatelessWidget {
   final Expense expense;
+  final String? receiptPhotoPath;
   final VoidCallback onDelete;
   final VoidCallback onTap;
-  const _ExpenseTile({required this.expense, required this.onDelete, required this.onTap});
+  const _ExpenseTile({required this.expense, this.receiptPhotoPath, required this.onDelete, required this.onTap});
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -160,7 +197,21 @@ class _ExpenseTile extends StatelessWidget {
     leading: CircleAvatar(backgroundColor: AppColors.primary.withValues(alpha: 0.12),
         child: const Icon(Icons.receipt, color: AppColors.primary, size: 18)),
     title: Text(expense.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMain)),
-    subtitle: Text(expense.store ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (expense.store != null) Text(expense.store!, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        if (receiptPhotoPath != null) 
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               Icon(Icons.image, size: 12, color: AppColors.primary),
+               SizedBox(width: 4),
+               Text('Có hóa đơn', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w500)),
+            ]
+          )
+      ]
+    ),
     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
       Text(_fmt(expense.amount), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textMain)),
       IconButton(icon: const Icon(Icons.delete_outline, color: Color(0xFFEF5350), size: 20), onPressed: onDelete),

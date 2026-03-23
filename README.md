@@ -20,6 +20,49 @@
 - **So sánh đa mùa (Multi-season Comparison):** Tự động tìm kiếm và hiển thị dữ liệu lịch sử của món đồ dựa trên tên trong các năm cũ.
 - **Nhận diện giá & ảnh:** Giúp người dùng biết chính xác năm ngoái mình mua món đó ở đâu, giá bao nhiêu để không bị mua đắt trong năm nay.
 
+## 🎬 Kịch Bản Demo Điển Hình (Bản Full A-Z)
+
+**B1: Giới thiệu ứng dụng & Khởi tạo dữ liệu (Tạo Kỳ Tết)**
+- Mở App, giới thiệu Màn hình Splash.
+- Chuyển sang Tab `Kỳ Tết`, bấm dấu **(+)** để tạo "Tết Ất Tỵ 2025".
+- Nhập *Thời gian bắt đầu, Kết thúc* và thiết lập *Tổng Ngân Sách Vĩ Mô* (VD: 20 triệu). Bấm **Lưu**.
+
+**B2: Quản lý & Phân bổ Ngân Sách Chi Tiết**
+- Trở về Tab `Tổng quan (Dashboard)` -> Bấm nút **Hạng mục** nhỏ phía trên biểu đồ.
+- Chọn chức năng **Chỉnh sửa (Icon cây bút chì)** cạnh từng danh mục (Thực phẩm, Quà tặng, Quần áo...) để nhập số tiền cấp cho mỗi mục sao cho "Tổng phân bổ" khớp với "Tổng Ngân Sách".
+
+**B3: Lên kế hoạch chi tiêu (Tạo Wishlist Cần Mua)**
+- Chuyển sang Tab `Cần Mua`. Bấm **(+) Add** để thêm khoảng 2-3 món đồ cần sửa soạn.
+- Nhập tên đồ, giá dự kiến, chọn hạng mục tương ứng. Bật nhãn "Quan trọng" (Ngôi sao) cho các món đồ thiết yếu. Thêm cả URL link mua hàng và chụp 1 tấm ảnh đính kèm minh họa (nếu có).
+
+**B4: Chốt đơn & Đồng bộ luồng tiền tự động (Core Logic)**
+- Vuốt trái một món hàng vừa tạo -> Bấm **Đã Mua**.
+- Nhập giá tiền thực tế (có thể nhập thấp hơn giá dự kiến để App tự tính tiền Tiết Kiệm sinh lời).
+- Dẫn chứng: Giới thiệu hệ thống tự động sinh ra một tờ hóa đơn bên Tab `Chi tiêu` giúp người dùng không bao giờ phải nhập tay 2 lần! 
+
+**B5: Xử lý Hành vi thực tế (Cập nhật giá và Xóa liên đới)**
+- Vuốt trái một món đã mua -> Ấn biểu tượng cây bút để **Sửa Giá**. Demo việc hóa đơn gốc bên Tab `Chi tiêu` cũng tự thay đổi số tiền nhảy theo.
+- Lại vuốt trái món đó -> Ấn **Theo dõi** (Undo hủy thao tác mua). 
+- Dẫn chứng: Chạy qua Tab `Chi tiêu` chỉ ra rằng Hóa rác ban nãy đã bị tiêu hủy sạch sẽ! Chứng minh luồng dữ liệu bảo vệ (Cascade Deletion) vô cùng khắt khe.
+
+**B6: Tổng kết Mua Sắm (AI Advisor & Hệ sinh thái Gamification)**
+- Trở trục về màn hình `Tổng quan (Dashboard)`. Kéo xuống Giới thiệu **Cây Tài Lộc** xanh tốt dựa trên số tiền tiết kiệm được. 
+- Giới thiệu hộp thoại **Cố vấn AI thông minh** đang khen ngợi/hoặc phát cảnh báo đỏ nếu tiêu vượt mức. Xem Biểu đồ Tròn và Cột thể hiện trực quan các khoản chi.
+
+**B7: Tổng kết Tết (Chức năng Thả thính - Gamification x2)**
+- Bấm vào icon **Ngôi sao lấp lánh (Tổng kết Tết)** trên góc phải trên cùng của Dashboard.
+- Lướt qua màn hình Wrap up Animation nhìn cực kỳ bắt mắt, tóm tắt lại "thành tựu" sắm Tết trong 1 năm qua (Cá chép, Đồng tiền vàng).
+
+**B8: Ghi chú bằng Hình Ảnh (Gallery)**
+- Sang Tab `Thư viện`. Bấm dấu **(+)** để chụp hình 1 hóa đơn giấy hoặc cảnh nhà cửa ngày Tết, gán hóa đơn này vào Khoản chi tiêu vừa phát sinh. Tính năng này đóng vai trò Lưu vết Audit cực tốt.
+
+**B9: Khép lại Báo Cáo Tài Chính (Xuất CSV)**
+- Quay về Tab `Tổng quan`. Kéo qua tab Thống kê/Báo cáo và bấm **Xuất CSV**. Mở file Excel ra để minh họa chức năng tích hợp gửi báo cáo qua Email thành công.
+
+**B10: Nhân bản dữ liệu đón năm mới (Reusability)**
+- Cuối cùng quay về Tab `Kỳ Tết`. Ấn **Nhân bản** cái Tết Ất Tỵ vất vả vừa gầy dựng sang thành "Tết Bính Ngọ 2026". 
+- Kết luận: Chỉ với 1 click, người dùng đã bê nguyên Bộ danh mục và Danh sách đồ đạc Cần mua của năm cũ sang năm hiện tại siêu nhanh chóng. End Demo. Cúi chào hội đồng!
+
 ---
 
 ## 🛠 Kiến Trúc Kỹ Thuật (Tech Stack)

@@ -71,11 +71,34 @@ class ItemViewModel extends ChangeNotifier {
 
   Future<void> updateStatus(String id, ItemStatus status, String seasonId) async {
     await _itemRepo.updateStatus(id, status);
+    if (status != ItemStatus.bought) {
+      await _expenseRepo.deleteByItemId(id);
+    }
     await load(seasonId);
   }
 
   Future<void> updatePrice(String id, int price, String seasonId) async {
     await _itemRepo.updateCurrentPrice(id, price);
+    
+    try {
+      final item = items.firstWhere((i) => i.id == id);
+      if (item.status == ItemStatus.bought) {
+        final existingExpense = await _expenseRepo.findByItemId(id);
+        if (existingExpense != null) {
+          await _expenseRepo.update(
+            existingExpense.id,
+            title: existingExpense.title,
+            amount: price * (existingExpense.quantity ?? 1),
+            unitPrice: price,
+            quantity: existingExpense.quantity,
+            date: existingExpense.date,
+            store: existingExpense.store,
+            note: existingExpense.note,
+          );
+        }
+      }
+    } catch (_) {} // ignore if not found
+    
     await load(seasonId);
   }
 
@@ -86,16 +109,30 @@ class ItemViewModel extends ChangeNotifier {
   }) async {
     final totalAmount = amount * item.quantity;
     
-    // 1. Tạo chi tiêu
-    await _expenseRepo.create(
-      seasonId: item.seasonId,
-      categoryId: categoryId,
-      itemId: item.id,
-      title: item.name,
-      amount: totalAmount,
-      unitPrice: amount,
-      quantity: item.quantity,
-    );
+    final existingExpense = await _expenseRepo.findByItemId(item.id);
+    if (existingExpense != null) {
+      await _expenseRepo.update(
+        existingExpense.id,
+        title: item.name,
+        amount: totalAmount,
+        unitPrice: amount,
+        quantity: item.quantity,
+        date: existingExpense.date,
+        store: item.store ?? existingExpense.store,
+        note: item.note ?? existingExpense.note,
+      );
+    } else {
+      await _expenseRepo.create(
+        seasonId: item.seasonId,
+        categoryId: categoryId,
+        itemId: item.id,
+        title: item.name,
+        amount: totalAmount,
+        unitPrice: amount,
+        quantity: item.quantity,
+      );
+    }
+    
     // 2. Cập nhật giá thực tế trên món đồ để so sánh
     await _itemRepo.updateCurrentPrice(item.id, amount);
     // 3. Đổi trạng thái sang Đã mua
@@ -110,6 +147,8 @@ class ItemViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteItem(String id, String seasonId) async {
+    // Phải xóa Expense TRƯỚC VÌ SQLite setup FOREIGN KEY ON DELETE SET NULL
+    await _expenseRepo.deleteByItemId(id);
     await _itemRepo.delete(id);
     await load(seasonId);
   }

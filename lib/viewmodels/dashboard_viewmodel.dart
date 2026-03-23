@@ -17,18 +17,24 @@ class DashboardViewModel extends ChangeNotifier {
   List<Expense> recentExpenses = [];
   bool isLoading = false;
 
-  Future<void> load(String seasonId) async {
+  String? _currentSeasonName;
+  String? _startDate;
+  String? _endDate;
+
+  Future<void> load(String seasonId, {String? seasonName, String? startDate, String? endDate}) async {
     isLoading = true;
     notifyListeners();
 
-    _currentSeasonName = ''; // To be updated if needed or via a dedicated property
-    // We might need the season object here, but we can try to extract from name if we have access to it or pass it.
-    // For now, I'll assume we can get the name from the repo or pass it.
+    _currentSeasonName = seasonName;
+    _startDate = startDate;
+    _endDate = endDate;
+    
     // Actually, DashboardViewModel doesn't store the season name yet. I'll add a property.
 
     totalSpent = await _analytics.getTotalSpent(seasonId);
     totalBudget = await _analytics.getTotalBudget(seasonId);
     plannedTotal = await _analytics.getPlannedTotal(seasonId);
+    _actualSavings = await _analytics.getSavings(seasonId);
     totalItems = await _analytics.getItemCount(seasonId);
     pendingItems = await _analytics.getPendingItemCount(seasonId);
     last7Days = await _analytics.getLast7DaysSpending(seasonId);
@@ -42,14 +48,17 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Ngân sách còn lại (Tiền mặt thực tế)
+
+  int _actualSavings = 0;
+
+  /// Chênh lệch giữa Giá dự kiến và Thực chi cho các món đã mua
+  /// (Dương là tiết kiệm được, Âm là chi vượt kế hoạch)
+  int get budgetVariance => _actualSavings;
+
+  /// Ngân sách còn lại (Tiền mặt thực tế so với giới hạn)
   int get remainingBudget => totalBudget - totalSpent;
 
-  /// Chênh lệch giữa Số tiền đã thực chi và Tổng cần chi dự kiến
-  /// (Dương là tiết kiệm được so với kế hoạch, Âm là chi vượt kế hoạch)
-  int get budgetVariance => plannedTotal - totalSpent;
-
-  /// Chênh lệch giữa Ngân sách giới hạn và Tổng dự kiến mua
+  /// Chênh lệch giữa Ngân sách giới hạn và Tổng dự kiến mua (Cho kế hoạch tương lai)
   int get planningBalance => totalBudget - plannedTotal;
 
   /// Trình trạng sức khỏe tài chính
@@ -84,34 +93,32 @@ class DashboardViewModel extends ChangeNotifier {
     return suggestions;
   }
 
-  String? _currentSeasonName;
   void setSeasonName(String? name) {
+    if (_currentSeasonName == name) return;
     _currentSeasonName = name;
     notifyListeners();
   }
 
-  int get daysUntilTet {
-    if (_currentSeasonName == null) return 0;
-    
-    // Extract year from name (e.g. "Tết 2028" -> 2028)
-    final yearMatch = RegExp(r'\d{4}').firstMatch(_currentSeasonName!);
-    final year = yearMatch != null ? int.parse(yearMatch.group(0)!) : DateTime.now().year;
+  Map<String, dynamic> get seasonDateStatus {
+    if (_startDate == null) return {'type': 'none', 'days': 0};
 
-    // Tet dates lookup (Jan 1 Lunar)
-    final Map<int, DateTime> tetDates = {
-      2024: DateTime(2024, 2, 10),
-      2025: DateTime(2025, 1, 29),
-      2026: DateTime(2026, 2, 17),
-      2027: DateTime(2027, 2, 6),
-      2028: DateTime(2028, 1, 26),
-      2029: DateTime(2029, 2, 13),
-      2030: DateTime(2030, 2, 3),
-    };
-
-    final tetDate = tetDates[year] ?? DateTime(year, 1, 20); // Fallback
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final diff = tetDate.difference(today).inDays;
-    return diff < 0 ? 0 : diff;
+    
+    final sd = DateTime.tryParse(_startDate!);
+    if (sd == null) return {'type': 'none', 'days': 0};
+    
+    final ed = _endDate != null ? DateTime.tryParse(_endDate!) : sd;
+    if (ed == null) return {'type': 'none', 'days': 0};
+
+    if (today.isBefore(sd)) {
+      final diff = sd.difference(today).inDays;
+      return {'type': 'before', 'days': diff};
+    } else if (!today.isAfter(ed)) {
+      return {'type': 'during', 'days': 0};
+    } else {
+      final diff = today.difference(ed).inDays;
+      return {'type': 'after', 'days': diff};
+    }
   }
 }

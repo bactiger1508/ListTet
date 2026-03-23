@@ -6,6 +6,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:person_app/theme/app_colors.dart';
 import 'package:person_app/viewmodels/dashboard_viewmodel.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:csv/csv.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:person_app/viewmodels/expense_viewmodel.dart';
 
 class TetWrappedScreen extends StatefulWidget {
   final String seasonName;
@@ -36,18 +40,61 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
       await file.writeAsBytes(bytes);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đã lưu ảnh tổng kết vào máy: $path'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        // Mở bảng Share để người dùng lưu ảnh về máy hoặc gửi qua app khác
+        await Share.shareXFiles([XFile(path)], text: 'Tổng kết mua sắm Tết: ${widget.seasonName}');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi khi xuất ảnh: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _exportCSV() async {
+    setState(() => _isExporting = true);
+    try {
+      final expenses = context.read<ExpenseViewModel>().expenses;
+      
+      List<List<dynamic>> rows = [];
+      // Header
+      rows.add(["Ngày", "Khoản chi", "Cửa hàng/Ghi chú", "Đơn giá", "Số lượng", "Thành tiền"]);
+      // Data
+      for (final e in expenses) {
+        rows.add([
+          e.date ?? '',
+          e.title,
+          e.store ?? '',
+          e.unitPrice ?? '',
+          e.quantity ?? 1,
+          e.amount
+        ]);
+      }
+      
+      // Calculate total
+      final int total = expenses.fold<int>(0, (sum, e) => sum + e.amount);
+      rows.add([]);
+      rows.add(["", "", "", "", "Tổng Cộng:", total]);
+
+      String csvData = csv.encode(rows);
+      
+      final directory = await getApplicationDocumentsDirectory();
+      final path = '${directory.path}/ChiTieuTet_${widget.seasonName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File(path);
+      
+      // Write BOM and UTF-8 encoded string for Excel compatibility
+      await file.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode(csvData)]);
+
+      if (mounted) {
+        await Share.shareXFiles([XFile(path)], text: 'Báo cáo chi tiêu: ${widget.seasonName}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi xuất CSV: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -67,7 +114,18 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
         actions: [
           _isExporting 
             ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: AppColors.accentGold, strokeWidth: 2)))
-            : IconButton(icon: const Icon(Icons.download, color: AppColors.accentGold), onPressed: _exportImage),
+            : PopupMenuButton<String>(
+                icon: const Icon(Icons.download, color: AppColors.accentGold),
+                color: AppColors.cardDark,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'image', child: Text('Lưu Ảnh Tổng Kết (PNG)', style: TextStyle(color: AppColors.textMain))),
+                  const PopupMenuItem(value: 'csv', child: Text('Xuất Báo Cáo Chi Tiêu (CSV)', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold))),
+                ],
+                onSelected: (val) {
+                  if (val == 'image') _exportImage();
+                  if (val == 'csv') _exportCSV();
+                },
+              ),
         ],
       ),
       body: SingleChildScrollView(

@@ -7,6 +7,7 @@ import 'package:person_app/data/models/item.dart';
 import 'package:person_app/theme/app_colors.dart';
 import 'package:person_app/views/screens/shopping/add_item_screen.dart';
 import 'package:person_app/views/screens/shopping/shopping_item_detail_screen.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class ShoppingWishlistScreen extends StatefulWidget {
   const ShoppingWishlistScreen({super.key});
@@ -206,13 +207,40 @@ class _ShoppingWishlistScreenState extends State<ShoppingWishlistScreen> {
     );
   }
 
-  Widget _empty() => const Center(
+  Widget _empty() => Center(
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.textMuted),
-      SizedBox(height: 12),
-      Text('Chưa có món nào', style: TextStyle(color: AppColors.textMain, fontSize: 16)),
-      SizedBox(height: 4),
-      Text('Nhấn + để thêm', style: TextStyle(color: AppColors.textMuted)),
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.shopping_bag_outlined, size: 64, color: AppColors.primary),
+      ),
+      const SizedBox(height: 24),
+      const Text('Chưa có món đồ nào!', style: TextStyle(color: AppColors.accentGold, fontSize: 18, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      const Text('Lên kế hoạch sắm Tết ngay hôm nay.', style: TextStyle(color: AppColors.textMuted)),
+      const SizedBox(height: 32),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.add, color: AppColors.primary),
+        label: const Text('Thêm món đồ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accentGold,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        onPressed: () {
+          final sid = context.read<SeasonViewModel>().activeSeason;
+          if (sid != null) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => AddItemScreen(
+                seasonId: sid,
+                onSaved: () => context.read<ItemViewModel>().load(sid),
+              )));
+          }
+        },
+      )
     ]),
   );
 }
@@ -249,22 +277,38 @@ class _SwipeableItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Dismissible(
+      child: Slidable(
         key: ValueKey(item.id),
-        direction: DismissDirection.endToStart,
-        confirmDismiss: (_) async => false, // Don't actually dismiss
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 8),
-          color: AppColors.surfaceDark,
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
+        endActionPane: ActionPane(
+          motion: const ScrollMotion(),
+          extentRatio: item.status != ItemStatus.bought ? 0.7 : 0.55,
+          children: [
             if (item.status != ItemStatus.bought)
-              _actionBtn(Icons.shopping_cart, 'Mua', AppColors.primary, onBuyNow),
-            _actionBtn(Icons.edit, 'Giá', Colors.blue, () => _showPriceDialog(context)),
-            _actionBtn(Icons.visibility, 'Theo dõi', Colors.orange,
-                () => onStatusChange(ItemStatus.watching)),
-            _actionBtn(Icons.delete, 'Xóa', Colors.red, onDelete),
-          ]),
+              CustomSlidableAction(
+                onPressed: (_) => onBuyNow(),
+                backgroundColor: AppColors.background,
+                padding: EdgeInsets.zero,
+                child: _actionBtnRaw(Icons.shopping_cart, 'Mua', AppColors.primary),
+              ),
+            CustomSlidableAction(
+              onPressed: (_) => _showPriceDialog(context),
+              backgroundColor: AppColors.background,
+              padding: EdgeInsets.zero,
+              child: _actionBtnRaw(Icons.edit, 'Giá', Colors.blue),
+            ),
+            CustomSlidableAction(
+              onPressed: (_) => onStatusChange(ItemStatus.watching),
+              backgroundColor: AppColors.background,
+              padding: EdgeInsets.zero,
+              child: _actionBtnRaw(Icons.visibility, 'Theo dõi', Colors.orange),
+            ),
+            CustomSlidableAction(
+              onPressed: (_) => onDelete(),
+              backgroundColor: AppColors.background,
+              padding: EdgeInsets.zero,
+              child: _actionBtnRaw(Icons.delete, 'Xóa', Colors.red),
+            ),
+          ],
         ),
         child: GestureDetector(
           onTap: onTap,
@@ -317,6 +361,17 @@ class _SwipeableItemCard extends StatelessWidget {
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: _dealColor)),
                   ],
                 ]),
+                if (item.currentPrice != null && item.savings != 0)
+                  Text(
+                    item.savings > 0 
+                      ? 'Tiết kiệm được: ${_fmt(item.savings)}' 
+                      : 'Vượt mức: ${_fmt(item.savings.abs())}',
+                    style: TextStyle(
+                      fontSize: 10, 
+                      fontWeight: FontWeight.w500,
+                      color: item.savings > 0 ? Colors.green : Colors.red,
+                    ),
+                  ),
                 if (item.store != null)
                   Text('📍 ${item.store}', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
               ])),
@@ -329,18 +384,15 @@ class _SwipeableItemCard extends StatelessWidget {
     );
   }
 
-  Widget _actionBtn(IconData icon, String label, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56, height: 56,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 20),
-          Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w600)),
-        ]),
-      ),
+  Widget _actionBtnRaw(IconData icon, String label, Color color) {
+    return Container(
+      width: 56, height: 56,
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w600)),
+      ]),
     );
   }
 

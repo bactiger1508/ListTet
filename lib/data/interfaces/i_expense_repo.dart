@@ -24,4 +24,6 @@ abstract class IExpenseRepo {
     String? note,
   });
   Future<void> delete(String id);
+  Future<Expense?> findByItemId(String itemId);
+  Future<void> deleteByItemId(String itemId);
 }

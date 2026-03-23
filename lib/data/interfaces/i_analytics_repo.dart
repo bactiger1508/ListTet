@@ -2,6 +2,7 @@ abstract class IAnalyticsRepo {
   Future<int> getTotalSpent(String seasonId);
   Future<int> getTotalBudget(String seasonId);
   Future<int> getPlannedTotal(String seasonId);
+  Future<int> getSavings(String seasonId);
   Future<Map<String, int>> getStoreAggregates(String seasonId);
   Future<int> getItemCount(String seasonId);
   Future<int> getBoughtCount(String seasonId);

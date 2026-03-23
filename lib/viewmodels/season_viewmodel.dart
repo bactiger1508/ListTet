@@ -30,8 +30,8 @@ class SeasonViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createSeason(String name, {String? startDate, String? endDate, int? budgetLimit}) async {
-    final s = await _repo.create(name: name, startDate: startDate, endDate: endDate, budgetLimit: budgetLimit);
+  Future<void> createSeason(String name, {String? startDate, String? endDate, int? budgetLimit, List<Map<String, dynamic>>? categoriesData}) async {
+    final s = await _repo.create(name: name, startDate: startDate, endDate: endDate, budgetLimit: budgetLimit, categoriesData: categoriesData);
     activeSeason = s.id;
     await loadSeasons();
     await loadCategories();
@@ -41,6 +41,13 @@ class SeasonViewModel extends ChangeNotifier {
     await _repo.delete(id);
     if (activeSeason == id) activeSeason = null;
     await loadSeasons();
+  }
+
+  Future<void> cloneSeason(String oldId, String newName, {String? startDate, String? endDate}) async {
+    final s = await _repo.cloneSeason(oldId, newName, startDate, endDate);
+    activeSeason = s.id;
+    await loadSeasons();
+    await loadCategories();
   }
 
   Future<void> updateSeason(String id, String name, {String? startDate, String? endDate, int? budgetLimit}) async {

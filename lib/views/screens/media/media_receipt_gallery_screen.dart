@@ -7,6 +7,7 @@ import 'package:person_app/viewmodels/season_viewmodel.dart';
 import 'package:person_app/data/models/photo.dart';
 import 'package:person_app/data/repos/photo_repo.dart';
 import 'package:person_app/theme/app_colors.dart';
+import 'package:person_app/viewmodels/expense_viewmodel.dart' as import_ext;
 import 'package:person_app/views/widgets/full_image_viewer.dart';
 
 class MediaReceiptGalleryScreen extends StatefulWidget {
@@ -44,37 +45,75 @@ class _MediaReceiptGalleryScreenState extends State<MediaReceiptGalleryScreen>
       if (picked == null) return;
 
       if (!mounted) return;
-      final note = await _showNoteDialog(context);
+      final result = await _showNoteAndLinkDialog(context);
+      if (result == null) return;
       
       if (!mounted) return;
       await context.read<PhotoViewModel>().addPhoto(
         sourcePath: picked.path,
         seasonId: seasonId,
         type: type,
-        note: note,
+        note: result.note,
+        expenseId: result.expenseId,
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     }
   }
 
-  Future<String?> _showNoteDialog(BuildContext context) async {
+  Future<({String? note, String? expenseId})?> _showNoteAndLinkDialog(BuildContext context) async {
     final ctrl = TextEditingController();
-    return showDialog<String>(
+    String? selectedExpenseId;
+    
+    // We only retrieve expenses if this is a receipt
+    final expenseVm = context.read<import_ext.ExpenseViewModel>();
+    final isReceipt = _tab.index == 0;
+    
+    return showDialog<({String? note, String? expenseId})>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardDark,
-        title: const Text('Thêm ghi chú (tùy chọn)', style: TextStyle(color: AppColors.textMain)),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          style: const TextStyle(color: AppColors.textMain),
-          decoration: const InputDecoration(hintText: 'Ví dụ: Hóa đơn mua hoa, ảnh bánh chưng...'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: AppColors.cardDark,
+          title: const Text('Thêm chi tiết (Tùy chọn)', style: TextStyle(color: AppColors.textMain)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                style: const TextStyle(color: AppColors.textMain),
+                decoration: const InputDecoration(hintText: 'Nhập ghi chú...'),
+              ),
+              if (isReceipt && expenseVm.expenses.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedExpenseId,
+                  dropdownColor: AppColors.cardDark,
+                  decoration: const InputDecoration(
+                    labelText: 'Gán vào khoản chi tiêu',
+                    labelStyle: TextStyle(color: AppColors.primary),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(value: null, child: Text('Không gán', style: TextStyle(color: AppColors.textMain))),
+                    ...expenseVm.expenses.map((e) => DropdownMenuItem(
+                      value: e.id,
+                      child: Text(e.title, style: const TextStyle(color: AppColors.textMain), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    )),
+                  ],
+                  onChanged: (val) => setState(() => selectedExpenseId = val),
+                  isExpanded: true,
+                ),
+              ]
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, (note: ctrl.text.trim(), expenseId: selectedExpenseId)), 
+              child: const Text('Lưu', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Bỏ qua')),
-          TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Lưu', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))),
-        ],
       ),
     );
   }

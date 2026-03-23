@@ -31,9 +31,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reloadAllData() {
-    final seasonId = context.read<SeasonViewModel>().activeSeason;
+    final seasonVm = context.read<SeasonViewModel>();
+    final seasonId = seasonVm.activeSeason;
+    final seasonName = seasonVm.currentSeason?.name;
+    
     if (seasonId != null) {
-      context.read<DashboardViewModel>().load(seasonId);
+      final season = seasonVm.currentSeason;
+      context.read<DashboardViewModel>().load(
+        seasonId, 
+        seasonName: season?.name, 
+        startDate: season?.startDate,
+        endDate: season?.endDate
+      );
       context.read<ItemViewModel>().load(seasonId);
       context.read<ExpenseViewModel>().load(seasonId);
       context.read<DealsViewModel>().load(seasonId);

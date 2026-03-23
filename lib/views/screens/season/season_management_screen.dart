@@ -36,7 +36,8 @@ class SeasonManagementScreen extends StatelessWidget {
                     isActive: vm.seasons[i].id == vm.activeSeason,
                     onTap: () => vm.selectSeason(vm.seasons[i].id),
                     onDelete: () => _confirmDelete(ctx, vm, vm.seasons[i].id, vm.seasons[i].name),
-                    onEdit: () => _goEdit(ctx, vm, vm.seasons[i].id, vm.seasons[i].name, vm.seasons[i].budgetLimit),
+                    onEdit: () => _goEdit(ctx, vm, vm.seasons[i].id, vm.seasons[i].name, vm.seasons[i].startDate, vm.seasons[i].endDate, vm.seasons[i].budgetLimit),
+                    onClone: () => _confirmClone(ctx, vm, vm.seasons[i]),
                   )),
     );
   }
@@ -44,19 +45,21 @@ class SeasonManagementScreen extends StatelessWidget {
   void _goCreate(BuildContext context, SeasonViewModel vm) {
     Navigator.push(context, MaterialPageRoute(
         builder: (_) => CreateEditSeasonScreen(
-          onSaved: (name, start, end, budget) async {
-            await vm.createSeason(name, startDate: start, endDate: end, budgetLimit: budget);
+          onSaved: (name, start, end, budget, cats) async {
+            await vm.createSeason(name, startDate: start, endDate: end, budgetLimit: budget, categoriesData: cats);
           },
         )));
   }
 
-  void _goEdit(BuildContext context, SeasonViewModel vm, String id, String currentName, int? budgetLimit) {
+  void _goEdit(BuildContext context, SeasonViewModel vm, String id, String currentName, String? start, String? end, int? budgetLimit) {
     Navigator.push(context, MaterialPageRoute(
         builder: (_) => CreateEditSeasonScreen(
           initialName: currentName,
+          initialStartDate: start,
+          initialEndDate: end,
           initialBudget: budgetLimit,
-          onSaved: (name, start, end, budget) async {
-            await vm.updateSeason(id, name, startDate: start, endDate: end, budgetLimit: budget);
+          onSaved: (name, newStart, newEnd, budget, _) async {
+            await vm.updateSeason(id, name, startDate: newStart, endDate: newEnd, budgetLimit: budget);
           },
         )));
   }
@@ -85,13 +88,52 @@ class SeasonManagementScreen extends StatelessWidget {
       ],
     ));
   }
+
+  void _confirmClone(BuildContext ctx, SeasonViewModel vm, dynamic season) {
+    final nameCtrl = TextEditingController(text: '${season.name} (Bản sao)');
+    showDialog(context: ctx, builder: (_) => AlertDialog(
+      backgroundColor: AppColors.cardDark,
+      title: const Text('Sao chép danh sách?', style: TextStyle(color: AppColors.textMain)),
+      content: TextField(
+        controller: nameCtrl,
+        style: const TextStyle(color: AppColors.textMain),
+        decoration: const InputDecoration(
+          labelText: 'Tên kỳ mới',
+          labelStyle: TextStyle(color: AppColors.primary),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+        TextButton(
+          onPressed: () async {
+            if (nameCtrl.text.trim().isEmpty) return;
+            showDialog(context: ctx, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+            try {
+              await vm.cloneSeason(season.id, nameCtrl.text.trim());
+              if (ctx.mounted) {
+                Navigator.pop(ctx); // pop loading
+                Navigator.pop(ctx); // pop dialog
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Đã sao chép thành công!')));
+              }
+            } catch (e) {
+              if (ctx.mounted) {
+                Navigator.pop(ctx); // pop loading
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+              }
+            }
+          },  
+          child: const Text('Nhân bản', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ));
+  }
 }
 
 class _SeasonCard extends StatelessWidget {
   final dynamic season;
   final bool isActive;
-  final VoidCallback onTap, onDelete, onEdit;
-  const _SeasonCard({required this.season, required this.isActive, required this.onTap, required this.onDelete, required this.onEdit});
+  final VoidCallback onTap, onDelete, onEdit, onClone;
+  const _SeasonCard({required this.season, required this.isActive, required this.onTap, required this.onDelete, required this.onEdit, required this.onClone});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -111,7 +153,14 @@ class _SeasonCard extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text(season.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+            Flexible(
+              child: Text(
+                season.name,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textMain),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             if (isActive) ...[
               const SizedBox(width: 8),
               Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -127,11 +176,14 @@ class _SeasonCard extends StatelessWidget {
           color: AppColors.cardDark,
           icon: const Icon(Icons.more_vert, color: AppColors.textMuted),
           itemBuilder: (_) => [
+            const PopupMenuItem(value: 'clone', child: Text('Nhân bản', style: TextStyle(color: AppColors.accentGold))),
             const PopupMenuItem(value: 'edit', child: Text('Sửa', style: TextStyle(color: AppColors.textMain))),
             const PopupMenuItem(value: 'delete', child: Text('Xóa', style: TextStyle(color: Colors.red))),
           ],
           onSelected: (v) {
-            if (v == 'edit') { onEdit(); } else { onDelete(); }
+            if (v == 'clone') { onClone(); } 
+            else if (v == 'edit') { onEdit(); } 
+            else { onDelete(); }
           },
         ),
       ]),
