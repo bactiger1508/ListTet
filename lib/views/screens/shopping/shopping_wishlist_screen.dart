@@ -55,10 +55,10 @@ class _ShoppingWishlistScreenState extends State<ShoppingWishlistScreen> {
                 ),
                 onChanged: (v) => vm.setSearch(v),
               )
-            : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Cần mua', style: Theme.of(context).appBarTheme.titleTextStyle),
-                Text('${vm.filteredItems.length} món', style: const TextStyle(fontSize: 12, color: AppColors.accentGold)),
-              ]),
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('🛒 Cần mua', style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(fontSize: 18)),
+                  Text('${vm.filteredItems.length} món đồ trong danh sách', style: TextStyle(fontSize: 11, color: AppColors.accentGold.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
+                ]),
         actions: [
           IconButton(
             icon: Icon(_showSearch ? Icons.close : Icons.search, color: AppColors.accentGold, size: 22),
@@ -127,16 +127,24 @@ class _ShoppingWishlistScreenState extends State<ShoppingWishlistScreen> {
                       ),
               ),
             ]),
-      floatingActionButton: seasonVm.activeSeason == null ? null : FloatingActionButton(
-        backgroundColor: AppColors.accentGold,
-        child: const Icon(Icons.add, color: AppColors.primary),
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(
-              builder: (_) => AddItemScreen(
-                seasonId: seasonVm.activeSeason!,
-                onSaved: () => vm.load(seasonVm.activeSeason!),
-              )));
-        },
+      floatingActionButton: seasonVm.activeSeason == null ? null : Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.goldGradient,
+          shape: BoxShape.circle,
+          boxShadow: AppColors.goldShadow,
+        ),
+        child: FloatingActionButton(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 28),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AddItemScreen(
+                  seasonId: seasonVm.activeSeason!,
+                  onSaved: () => vm.load(seasonVm.activeSeason!),
+                )));
+          },
+        ),
       ),
     );
   }
@@ -155,7 +163,7 @@ class _ShoppingWishlistScreenState extends State<ShoppingWishlistScreen> {
           color: active ? null : AppColors.cardDark,
           borderRadius: BorderRadius.circular(16),
           boxShadow: active 
-            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4), spreadRadius: -1)]
+            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4), spreadRadius: -2)]
             : AppColors.softShadow,
           border: active ? null : Border.all(color: AppColors.borderMuted.withValues(alpha: 0.8)),
         ),
@@ -318,7 +326,7 @@ class _SwipeableItemCard extends StatelessWidget {
               color: AppColors.cardDark,
               borderRadius: BorderRadius.circular(24),
               boxShadow: AppColors.softShadow,
-              border: Border.all(color: AppColors.borderMuted.withValues(alpha: 0.5)),
+              border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.08)),
             ),
             child: Row(children: [
               // Thumbnail
@@ -344,12 +352,13 @@ class _SwipeableItemCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textMain),
                       overflow: TextOverflow.ellipsis)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                        color: _statusColor(item.status).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10)),
-                    child: Text(_statusLabel(item.status),
-                        style: TextStyle(fontSize: 10, color: _statusColor(item.status))),
+                        color: _statusColor(item.status).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _statusColor(item.status).withValues(alpha: 0.2), width: 0.5)),
+                    child: Text(_statusLabel(item.status).toUpperCase(),
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: _statusColor(item.status), letterSpacing: 0.5)),
                   ),
                 ]),
                 const SizedBox(height: 4),

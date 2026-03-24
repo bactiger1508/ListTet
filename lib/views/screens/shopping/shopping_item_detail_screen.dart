@@ -8,7 +8,6 @@ import 'package:person_app/viewmodels/shopping_viewmodel.dart';
 import 'package:person_app/viewmodels/photo_viewmodel.dart';
 import 'package:person_app/theme/app_colors.dart';
 import 'package:person_app/views/screens/shopping/historical_comparison_screen.dart';
-import 'package:person_app/views/widgets/full_image_viewer.dart';
 
 class ShoppingItemDetailScreen extends StatefulWidget {
   final Item item;
@@ -128,15 +127,24 @@ class _ShoppingItemDetailScreenState extends State<ShoppingItemDetailScreen> {
 
           const SizedBox(height: 24),
 
-          ElevatedButton.icon(
-            onPressed: item.status != ItemStatus.bought
-                ? () => _markBought(context, vm)
-                : null,
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('Đã mua'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          Container(
+            decoration: BoxDecoration(
+              gradient: item.status != ItemStatus.bought ? AppColors.goldGradient : null,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: item.status != ItemStatus.bought ? AppColors.goldShadow : null,
+              color: item.status == ItemStatus.bought ? AppColors.borderMuted.withValues(alpha: 0.3) : null,
+            ),
+            child: ElevatedButton.icon(
+              onPressed: item.status != ItemStatus.bought ? () => _markBought(context, vm) : null,
+              icon: Icon(Icons.check_circle_rounded, color: item.status == ItemStatus.bought ? AppColors.textMuted : AppColors.primary),
+              label: Text(item.status == ItemStatus.bought ? 'ĐÃ MUA XONG' : 'XÁC NHẬN ĐÃ MUA'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                minimumSize: const Size.fromHeight(56),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                foregroundColor: item.status == ItemStatus.bought ? AppColors.textMuted : AppColors.primary,
+              ),
             ),
           ),
           
@@ -163,21 +171,21 @@ class _ShoppingItemDetailScreenState extends State<ShoppingItemDetailScreen> {
   }
 
   Widget _infoCard(List<Widget> rows) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 8),
     decoration: BoxDecoration(
-      color: AppColors.background, 
+      color: Colors.white, 
       borderRadius: BorderRadius.circular(24),
       boxShadow: AppColors.softShadow,
-      border: Border.all(color: AppColors.borderMuted.withValues(alpha: 0.5)),
+      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.05)),
     ),
     child: Column(children: rows),
   );
 
-  Widget _infoRow(String label, String value, {Color? valueColor}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.borderSubtle))),
+  Widget _infoRow(String label, String value, {Color? valueColor}) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
-      Text(value, style: TextStyle(color: valueColor ?? AppColors.textMain, fontWeight: FontWeight.w600, fontSize: 14)),
+      Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+      Text(value, style: TextStyle(color: valueColor ?? AppColors.textMain, fontWeight: FontWeight.bold, fontSize: 14)),
     ]),
   );
 
@@ -266,7 +274,6 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPhoto = photos.isNotEmpty || (item.imagePath != null && File(item.imagePath!).existsSync());
     final dealLevel = item.dealLevel;
 
     return Container(
@@ -291,15 +298,19 @@ class _HeroCard extends StatelessWidget {
             child: Icon(Icons.shopping_bag_outlined, size: 64, color: _dealColor(dealLevel).withValues(alpha: 0.5)),
           ),
         Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(children: [
-            Text(item.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textMain)),
-            const SizedBox(height: 8),
+            Text(item.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textMain, letterSpacing: -0.5)),
+            const SizedBox(height: 12),
             if (item.currentPrice != null)
-              Text('${_fmtPrice(item.currentPrice!)} ₫',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: _dealColor(dealLevel)))
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(color: _dealColor(dealLevel).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                child: Text('${_fmtPrice(item.currentPrice!)} ₫',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: _dealColor(dealLevel))),
+              )
             else
-              Text('Giá mục tiêu: ${_fmtPrice(item.targetPrice)} ₫', style: const TextStyle(fontSize: 16, color: AppColors.textMuted)),
+              Text('Giá mục tiêu: ${_fmtPrice(item.targetPrice)} ₫', style: const TextStyle(fontSize: 16, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
           ]),
         ),
       ]),
@@ -324,27 +335,5 @@ class _HeroCard extends StatelessWidget {
       case 'cao': return Colors.red.withValues(alpha: 0.05);
       default: return AppColors.cardDark;
     }
-  }
-}
-
-class _PhotoThumbnail extends StatelessWidget {
-  final Photo photo;
-  const _PhotoThumbnail({required this.photo});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => FullImageViewer(
-          imagePath: photo.localPath,
-          note: photo.note,
-          title: 'Ảnh sản phẩm',
-        ),
-      )),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(File(photo.localPath), width: 120, height: 120, fit: BoxFit.cover),
-      ),
-    );
   }
 }

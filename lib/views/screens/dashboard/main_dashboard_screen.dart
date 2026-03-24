@@ -7,7 +7,6 @@ import 'package:person_app/data/services/ai_advisor_service.dart';
 import 'package:person_app/views/widgets/fortune_tree_widget.dart';
 import 'package:person_app/views/screens/dashboard/tet_wrapped_screen.dart';
 import 'package:person_app/theme/app_colors.dart';
-import 'package:person_app/views/screens/deals/best_deal_alerts_screen.dart';
 import 'package:person_app/views/screens/category/category_budget_screen.dart';
 import 'package:person_app/views/widgets/spending_bar_chart.dart';
 import 'package:person_app/views/widgets/category_pie_chart.dart';
@@ -158,22 +157,34 @@ class MainDashboardScreen extends StatelessWidget {
   }
 
   Widget _aiAdvisorCard(AIAdvisorResult result) => Container(
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: result.statusColor.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: result.statusColor.withOpacity(0.2)),
+      gradient: AppColors.glassGradient,
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.2)),
+      boxShadow: [
+        BoxShadow(
+          color: result.statusColor.withValues(alpha: 0.05),
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        )
+      ],
     ),
     child: Row(
       children: [
-        Icon(Icons.auto_awesome, color: result.statusColor, size: 24),
-        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: result.statusColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(Icons.tips_and_updates_rounded, color: result.statusColor, size: 24),
+        ),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(result.advice, style: TextStyle(fontWeight: FontWeight.bold, color: result.statusColor, fontSize: 14)),
-              Text(result.subAdvice, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              Text(result.advice, style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMain, fontSize: 15)),
+              const SizedBox(height: 4),
+              Text(result.subAdvice, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             ],
           ),
         ),
@@ -186,18 +197,19 @@ class MainDashboardScreen extends StatelessWidget {
     decoration: BoxDecoration(
       color: AppColors.cardDark, 
       borderRadius: BorderRadius.circular(24),
-      boxShadow: AppColors.softShadow,
-      border: Border.all(color: AppColors.borderMuted.withOpacity(0.1)),
+      boxShadow: AppColors.goldShadow,
+      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.05)),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-        child: Icon(icon, color: color, size: 20),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
+        child: Icon(icon, color: color, size: 22),
       ),
-      const SizedBox(height: 12),
-      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMain)),
-      Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+      const SizedBox(height: 16),
+      Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+      const SizedBox(height: 4),
+      Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
     ]),
   );
 
@@ -205,7 +217,8 @@ class MainDashboardScreen extends StatelessWidget {
     decoration: BoxDecoration(
       color: AppColors.cardDark, 
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: AppColors.borderMuted.withOpacity(0.1)),
+      boxShadow: AppColors.softShadow,
+      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.05)),
     ),
     child: ListView.separated(
       shrinkWrap: true,

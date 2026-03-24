@@ -47,16 +47,22 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient accentGradient = LinearGradient(
+  static const LinearGradient goldGradient = LinearGradient(
     colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient glassGradient = LinearGradient(
-    colors: [Color(0x1AFFFFFF), Color(0x0DFFFFFF)],
+    colors: [Color(0x33FFFFFF), Color(0x1AFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient surfaceGradient = LinearGradient(
+    colors: [Color(0xFFFFFFFF), Color(0xFFF9FAFB)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
 
   // Soft Shadows
@@ -70,10 +76,19 @@ class AppColors {
 
   static List<BoxShadow> deepShadow = [
     BoxShadow(
-      color: primary.withValues(alpha: 0.1),
-      blurRadius: 12,
+      color: primary.withValues(alpha: 0.15),
+      blurRadius: 20,
+      spreadRadius: -4,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> goldShadow = [
+    BoxShadow(
+      color: accentGold.withValues(alpha: 0.3),
+      blurRadius: 15,
       spreadRadius: -2,
-      offset: const Offset(0, 4),
+      offset: const Offset(0, 6),
     ),
   ];
 }

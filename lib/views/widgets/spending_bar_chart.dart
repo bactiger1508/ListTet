@@ -19,8 +19,9 @@ class SpendingBarChart extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppColors.softShadow,
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.1)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Chi tiêu 7 ngày qua',
@@ -73,7 +74,8 @@ class SpendingBarChart extends StatelessWidget {
                   BarChartRodData(
                     toY: val > 0 ? val : 0,
                     width: 20,
-                    color: val > 0 ? AppColors.primary : AppColors.borderSubtle,
+                    gradient: val > 0 ? AppColors.goldGradient : null,
+                    color: val > 0 ? null : AppColors.borderMuted.withValues(alpha: 0.3),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                   ),
                 ]);

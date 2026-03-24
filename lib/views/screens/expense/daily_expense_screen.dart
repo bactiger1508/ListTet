@@ -61,7 +61,7 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
                         decoration: BoxDecoration(
                             color: Theme.of(context).cardTheme.color, 
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.accentGold.withOpacity(0.5))),
+                            border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.15))),
                         child: ListView.separated(
                           shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
                           itemCount: items.length,
@@ -108,17 +108,38 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardDark,
-        title: const Text('Xóa chi tiêu?', style: TextStyle(color: AppColors.textMain)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.error),
+          SizedBox(width: 8),
+          Text('Xóa chi tiêu?', style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold)),
+        ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bạn có chắc muốn xóa "${expense.title}"?', style: const TextStyle(color: AppColors.textMain70)),
+            RichText(text: TextSpan(
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              children: [
+                const TextSpan(text: 'Bạn có chắc muốn xóa "'),
+                TextSpan(text: expense.title, style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold)),
+                const TextSpan(text: '"?'),
+              ]
+            )),
             if (expense.itemId != null) ...[
-              const SizedBox(height: 12),
-              const Text('Lưu ý: Món đồ liên kết sẽ được chuyển về trạng thái "Theo dõi" để bạn có thể mua lại sau.',
-                  style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                child: const Row(children: [
+                  Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('Lưu ý: Món đồ liên kết sẽ được chuyển về trạng thái "Theo dõi".',
+                      style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w500))),
+                ]),
+              ),
             ]
           ],
         ),
@@ -127,15 +148,16 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
           TextButton(
             onPressed: () async {
               final sid = context.read<SeasonViewModel>().activeSeason!;
-              // 1. Xóa chi tiêu
+              // 1. Close dialog immediately to reflect action
+              Navigator.pop(ctx);
+              // 2. Perform deletion
               await context.read<ExpenseViewModel>().deleteExpense(expense.id, sid);
-              // 2. Nếu có món đồ liên kết, tự động đưa về "Theo dõi"
-              if (expense.itemId != null && context.mounted) {
+              // 3. Update linked item status
+              if (expense.itemId != null) {
                 await context.read<ItemViewModel>().updateStatus(expense.itemId!, ItemStatus.watching, sid);
               }
-              if (context.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Xác nhận xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text('Xác nhận xóa', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -147,7 +169,7 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.receipt_long, size: 64, color: AppColors.primary),

@@ -162,12 +162,14 @@ class _CategoryBudgetScreenState extends State<CategoryBudgetScreen> {
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
-          TextButton(onPressed: () {
+          TextButton(onPressed: () async {
             if (nameCtrl.text.trim().isNotEmpty && seasonVm.activeSeason != null) {
               final budget = int.tryParse(budgetCtrl.text.replaceAll('.', '').replaceAll(',', '')) ?? 0;
-              vm.addCategory(seasonVm.activeSeason!, nameCtrl.text.trim(), budget: budget);
+              await vm.addCategory(seasonVm.activeSeason!, nameCtrl.text.trim(), budget: budget);
+              // Sync SeasonViewModel so other screens (e.g. add_item dropdown) see the new category
+              await seasonVm.loadCategories();
             }
-            Navigator.pop(ctx);
+            if (ctx.mounted) Navigator.pop(ctx);
           }, child: const Text('Thêm', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))),
         ],
       ),

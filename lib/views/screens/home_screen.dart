@@ -33,8 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _reloadAllData() {
     final seasonVm = context.read<SeasonViewModel>();
     final seasonId = seasonVm.activeSeason;
-    final seasonName = seasonVm.currentSeason?.name;
-    
     if (seasonId != null) {
       final season = seasonVm.currentSeason;
       context.read<DashboardViewModel>().load(
@@ -66,35 +64,33 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
               offset: const Offset(0, -5),
             ),
           ],
+          border: Border(top: BorderSide(color: AppColors.accentGold.withValues(alpha: 0.1), width: 1)),
         ),
         child: SafeArea(
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) {
-              setState(() => _currentIndex = i);
-              _reloadAllData();
-            },
-            backgroundColor: AppColors.background,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textMuted,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Tổng quan'),
-              BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), activeIcon: Icon(Icons.receipt_long), label: 'Chi tiêu'),
-              BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), activeIcon: Icon(Icons.shopping_cart), label: 'Cần mua'),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), activeIcon: Icon(Icons.calendar_month), label: 'Kỳ Tết'),
-              BottomNavigationBarItem(icon: Icon(Icons.photo_library_outlined), activeIcon: Icon(Icons.photo_library), label: 'Thư viện'),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (i) {
+                setState(() => _currentIndex = i);
+                _reloadAllData();
+              },
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard_rounded), label: 'Tổng quan'),
+                BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), activeIcon: Icon(Icons.receipt_long_rounded), label: 'Chi tiêu'),
+                BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), activeIcon: Icon(Icons.shopping_cart_rounded), label: 'Cần mua'),
+                BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today_rounded), label: 'Mùa Tết'),
+                BottomNavigationBarItem(icon: Icon(Icons.photo_library_outlined), activeIcon: Icon(Icons.photo_library_rounded), label: 'Thư viện'),
+              ],
+            ),
           ),
         ),
       ),

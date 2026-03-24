@@ -23,6 +23,37 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
   final GlobalKey _boundaryKey = GlobalKey();
   bool _isExporting = false;
 
+  /// Tạo file CSV từ danh sách chi tiêu và trả về đường dẫn file
+  Future<String> _generateCSVFile() async {
+    final expenses = context.read<ExpenseViewModel>().expenses;
+    
+    List<List<dynamic>> rows = [];
+    rows.add(["Ngày", "Khoản chi", "Cửa hàng/Ghi chú", "Đơn giá", "Số lượng", "Thành tiền"]);
+    for (final e in expenses) {
+      rows.add([
+        e.date,
+        e.title,
+        e.store ?? '',
+        e.unitPrice ?? '',
+        e.quantity ?? 1,
+        e.amount
+      ]);
+    }
+    
+    final int total = expenses.fold<int>(0, (sum, e) => sum + e.amount);
+    rows.add([]);
+    rows.add(["", "", "", "", "Tổng Cộng:", total]);
+
+    String csvData = csv.encode(rows);
+    
+    final directory = await getTemporaryDirectory();
+    final path = '${directory.path}/ChiTieuTet_${widget.seasonName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.csv';
+    final file = File(path);
+    
+    await file.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode(csvData)], flush: true);
+    return path;
+  }
+
   Future<void> _exportImage() async {
     setState(() => _isExporting = true);
     try {
@@ -34,14 +65,17 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
       if (byteData == null) return;
 
       final bytes = byteData.buffer.asUint8List();
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await getTemporaryDirectory();
       final path = '${directory.path}/TetWrapped_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File(path);
-      await file.writeAsBytes(bytes);
+      await file.writeAsBytes(bytes, flush: true);
 
       if (mounted) {
-        // Mở bảng Share để người dùng lưu ảnh về máy hoặc gửi qua app khác
-        await Share.shareXFiles([XFile(path)], text: 'Tổng kết mua sắm Tết: ${widget.seasonName}');
+        await Share.shareXFiles(
+          [XFile(path, mimeType: 'image/png')],
+          subject: 'Tổng kết mua sắm Tết - ${widget.seasonName}',
+          text: 'Chia sẻ từ Tet Shopping Assistant: Mùa ${widget.seasonName}',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -57,39 +91,13 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
   Future<void> _exportCSV() async {
     setState(() => _isExporting = true);
     try {
-      final expenses = context.read<ExpenseViewModel>().expenses;
-      
-      List<List<dynamic>> rows = [];
-      // Header
-      rows.add(["Ngày", "Khoản chi", "Cửa hàng/Ghi chú", "Đơn giá", "Số lượng", "Thành tiền"]);
-      // Data
-      for (final e in expenses) {
-        rows.add([
-          e.date ?? '',
-          e.title,
-          e.store ?? '',
-          e.unitPrice ?? '',
-          e.quantity ?? 1,
-          e.amount
-        ]);
-      }
-      
-      // Calculate total
-      final int total = expenses.fold<int>(0, (sum, e) => sum + e.amount);
-      rows.add([]);
-      rows.add(["", "", "", "", "Tổng Cộng:", total]);
-
-      String csvData = csv.encode(rows);
-      
-      final directory = await getApplicationDocumentsDirectory();
-      final path = '${directory.path}/ChiTieuTet_${widget.seasonName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.csv';
-      final file = File(path);
-      
-      // Write BOM and UTF-8 encoded string for Excel compatibility
-      await file.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode(csvData)]);
-
+      final path = await _generateCSVFile();
       if (mounted) {
-        await Share.shareXFiles([XFile(path)], text: 'Báo cáo chi tiêu: ${widget.seasonName}');
+        await Share.shareXFiles(
+          [XFile(path, mimeType: 'text/csv')],
+          subject: 'Báo cáo chi tiêu Tết - ${widget.seasonName}',
+          text: 'Gửi bạn báo cáo chi tiêu mùa Tết: ${widget.seasonName}',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -107,10 +115,11 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
     final vm = context.watch<DashboardViewModel>();
     
     return Scaffold(
-      backgroundColor: AppColors.cardDark,
+      backgroundColor: const Color(0xFF8E0E00),
       appBar: AppBar(
         title: const Text('Tổng kết Tết', style: TextStyle(color: AppColors.accentGold)),
         backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           _isExporting 
             ? const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: AppColors.accentGold, strokeWidth: 2)))
@@ -119,7 +128,7 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
                 color: AppColors.cardDark,
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'image', child: Text('Lưu Ảnh Tổng Kết (PNG)', style: TextStyle(color: AppColors.textMain))),
-                  const PopupMenuItem(value: 'csv', child: Text('Xuất Báo Cáo Chi Tiêu (CSV)', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold))),
+                  const PopupMenuItem(value: 'csv', child: Text('Xuất Báo Báo CSV (Share Sheet)', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold))),
                 ],
                 onSelected: (val) {
                   if (val == 'image') _exportImage();
@@ -138,7 +147,7 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF8E0E00), Color(0xFF1F1C18)], // Deep premium red/brown
+                colors: [Color(0xFF8E0E00), Color(0xFF1F1C18)],
               ),
             ),
             child: Column(
@@ -158,9 +167,9 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.accentGold.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.2)),
                   ),
                   child: const Column(
                     children: [
@@ -195,7 +204,7 @@ class _TetWrappedScreenState extends State<TetWrappedScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: AppColors.accentGold.withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: AppColors.accentGold.withValues(alpha: 0.1), shape: BoxShape.circle),
           child: Icon(icon, color: AppColors.accentGold, size: 28),
         ),
         const SizedBox(width: 20),
