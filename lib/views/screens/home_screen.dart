@@ -11,6 +11,7 @@ import 'package:person_app/views/screens/expense/daily_expense_screen.dart';
 import 'package:person_app/views/screens/season/season_management_screen.dart';
 import 'package:person_app/views/screens/shopping/shopping_wishlist_screen.dart';
 import 'package:person_app/views/screens/media/media_receipt_gallery_screen.dart';
+import 'package:person_app/viewmodels/navigation_viewmodel.dart';
 import 'package:person_app/theme/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  // Navigation state moved to NavigationViewModel
 
   @override
   void initState() {
@@ -50,9 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navVm = context.watch<NavigationViewModel>();
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: navVm.currentIndex,
         children: const [
           MainDashboardScreen(),
           DailyExpenseScreen(),
@@ -78,9 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: BottomNavigationBar(
-              currentIndex: _currentIndex,
+              currentIndex: navVm.currentIndex,
               onTap: (i) {
-                setState(() => _currentIndex = i);
+                navVm.setIndex(i);
                 _reloadAllData();
               },
               items: const [

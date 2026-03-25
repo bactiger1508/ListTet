@@ -7,6 +7,7 @@ import 'package:person_app/viewmodels/expense_viewmodel.dart';
 import 'package:person_app/viewmodels/deals_viewmodel.dart';
 import 'package:person_app/viewmodels/photo_viewmodel.dart';
 import 'package:person_app/viewmodels/category_viewmodel.dart';
+import 'package:person_app/viewmodels/navigation_viewmodel.dart';
 import 'package:person_app/theme/app_theme.dart';
 import 'package:person_app/views/screens/home_screen.dart';
 import 'package:person_app/views/screens/splash/splash_screen.dart';
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DealsViewModel()),
         ChangeNotifierProvider(create: (_) => PhotoViewModel()),
         ChangeNotifierProvider(create: (_) => CategoryViewModel()),
+        ChangeNotifierProvider(create: (_) => NavigationViewModel()),
       ],
       child: MaterialApp(
         title: 'Săn Sale Tết',

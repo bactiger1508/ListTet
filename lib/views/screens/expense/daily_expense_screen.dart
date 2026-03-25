@@ -148,13 +148,16 @@ class _DailyExpenseScreenState extends State<DailyExpenseScreen> {
           TextButton(
             onPressed: () async {
               final sid = context.read<SeasonViewModel>().activeSeason!;
+              final expenseVm = context.read<ExpenseViewModel>();
+              final itemVm = context.read<ItemViewModel>();
+
               // 1. Close dialog immediately to reflect action
               Navigator.pop(ctx);
               // 2. Perform deletion
-              await context.read<ExpenseViewModel>().deleteExpense(expense.id, sid);
+              await expenseVm.deleteExpense(expense.id, sid);
               // 3. Update linked item status
               if (expense.itemId != null) {
-                await context.read<ItemViewModel>().updateStatus(expense.itemId!, ItemStatus.watching, sid);
+                await itemVm.updateStatus(expense.itemId!, ItemStatus.watching, sid);
               }
             },
             child: const Text('Xác nhận xóa', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),

@@ -20,7 +20,12 @@
 - **So sánh đa mùa (Multi-season Comparison):** Tự động tìm kiếm và hiển thị dữ liệu lịch sử của món đồ dựa trên tên trong các năm cũ.
 - **Nhận diện giá & ảnh:** Giúp người dùng biết chính xác năm ngoái mình mua món đó ở đâu, giá bao nhiêu để không bị mua đắt trong năm nay.
 
-## 🎬 Kịch Bản Demo Điển Hình (Bản Full A-Z)
+
+
+
+
+
+## 🎬 Kịch Bản Demo Điển Hình
 
 **B1: Giới thiệu ứng dụng & Khởi tạo dữ liệu (Tạo Kỳ Tết)**
 - Mở App, giới thiệu Màn hình Splash.
@@ -50,11 +55,11 @@
 - Giới thiệu hộp thoại **Cố vấn AI thông minh** đang khen ngợi/hoặc phát cảnh báo đỏ nếu tiêu vượt mức. Xem Biểu đồ Tròn và Cột thể hiện trực quan các khoản chi.
 
 **B7: Tổng kết Tết (Chức năng Thả thính - Gamification x2)**
-- Bấm vào icon **Ngôi sao lấp lánh (Tổng kết Tết)** trên góc phải trên cùng của Dashboard.
-- Lướt qua màn hình Wrap up Animation nhìn cực kỳ bắt mắt, tóm tắt lại "thành tựu" sắm Tết trong 1 năm qua (Cá chép, Đồng tiền vàng).
+- Bấm vào icon **Ngôi sao lấp lánh** trên góc phải trên cùng của Dashboard.
+- Lướt qua màn hình Wrap up, tóm tắt lại "thành tựu" sắm Tết trong 1 năm qua .
 
 **B8: Ghi chú bằng Hình Ảnh (Gallery)**
-- Sang Tab `Thư viện`. Bấm dấu **(+)** để chụp hình 1 hóa đơn giấy hoặc cảnh nhà cửa ngày Tết, gán hóa đơn này vào Khoản chi tiêu vừa phát sinh. Tính năng này đóng vai trò Lưu vết Audit cực tốt.
+- Sang Tab `Thư viện`. Bấm dấu **(+)** để chụp hình 1 hóa đơn giấy hoặc cảnh nhà cửa ngày Tết, thêm ghi chú cho hóa đơn.
 
 **B9: Khép lại Báo Cáo Tài Chính (Xuất CSV)**
 - Quay về Tab `Tổng quan`. Kéo qua tab Thống kê/Báo cáo và bấm **Xuất CSV**. Mở file Excel ra để minh họa chức năng tích hợp gửi báo cáo qua Email thành công.
@@ -74,36 +79,3 @@
 | **Database** | SQLite (sqflite) | Lưu trữ offline-first, hỗ trợ migration (V4) |
 | **Storage** | Path Provider | Quản lý lưu trữ file ảnh nội bộ |
 | **Tools** | Image Picker | Tích hợp camera và thư viện ảnh |
-
-### Sơ đồ quan hệ dữ liệu (Data Relationship)
-
-```mermaid
-erDiagram
-    SEASON ||--o{ CATEGORY : contains
-    SEASON ||--o{ PHOTO : owns
-    CATEGORY ||--o{ ITEM : has
-    CATEGORY ||--o{ EXPENSE : tracks
-    ITEM ||--o{ EXPENSE : creates
-    ITEM ||--o{ PHOTO : referenced_by
-    EXPENSE ||--o{ PHOTO : has_receipt
-```
-
----
-
-## 📂 Cấu Trúc Thư Mục Quan Trọng
-
-- `lib/data/models/`: Định nghĩa các thực thể dữ liệu (`Item`, `Category`, `Season`, `Photo`, `Expense`).
-- `lib/data/repos/`: Lớp truy xuất dữ liệu từ SQLite (Repository Pattern).
-- `lib/viewmodels/`: Xử lý logic nghiệp vụ và cập nhật trạng thái UI.
-- `lib/views/screens/`: Giao diện người dùng (Dashboard, Shopping, Media, Comparison).
-
----
-
-## ⚙️ Hướng Dẫn Kỹ Thuật
-
-- **Nâng cấp Database:** Nếu bạn thêm trường mới, hãy tăng `DATABASE_VERSION` trong `app_database.dart` và cập nhật logic trong `_onUpgrade`.
-- **Thêm tính năng mới:** Tuân thủ luồng: `Model` -> `Repo` -> `ViewModel` -> `Screen`.
-- **Chạy ứng dụng:** `flutter run`.
-
----
-*Tài liệu được cập nhật dựa trên phiên bản nâng cấp Logic nâng cao 2026.*

@@ -107,19 +107,19 @@ class SeasonManagementScreen extends StatelessWidget {
         TextButton(
           onPressed: () async {
             if (nameCtrl.text.trim().isEmpty) return;
+            
+            final nav = Navigator.of(ctx);
+            final messenger = ScaffoldMessenger.of(ctx);
+            
             showDialog(context: ctx, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
             try {
               await vm.cloneSeason(season.id, nameCtrl.text.trim());
-              if (ctx.mounted) {
-                Navigator.pop(ctx); // pop loading
-                Navigator.pop(ctx); // pop dialog
-                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Đã sao chép thành công!')));
-              }
+              nav.pop(); // pop loading
+              nav.pop(); // pop dialog
+              messenger.showSnackBar(const SnackBar(content: Text('Đã sao chép thành công!')));
             } catch (e) {
-              if (ctx.mounted) {
-                Navigator.pop(ctx); // pop loading
-                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-              }
+              nav.pop(); // pop loading
+              messenger.showSnackBar(SnackBar(content: Text('Lỗi: $e')));
             }
           },  
           child: const Text('Nhân bản', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold)),

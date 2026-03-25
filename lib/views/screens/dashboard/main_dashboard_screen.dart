@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:person_app/viewmodels/dashboard_viewmodel.dart';
 import 'package:person_app/viewmodels/season_viewmodel.dart';
+import 'package:person_app/viewmodels/navigation_viewmodel.dart';
 import 'package:person_app/data/services/ai_advisor_service.dart';
 import 'package:person_app/views/widgets/fortune_tree_widget.dart';
 import 'package:person_app/views/screens/dashboard/tet_wrapped_screen.dart';
@@ -142,8 +143,11 @@ class MainDashboardScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Giao dịch gần đây', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMain)),
-                  TextButton(onPressed: () {}, child: const Text('Xem tất cả')),
+                   const Text('Giao dịch gần đây', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMain)),
+                   TextButton(
+                    onPressed: () => context.read<NavigationViewModel>().setIndex(1),
+                    child: const Text('Xem tất cả')
+                  ),
                 ],
               ),
               _recentExpensesList(vm),
