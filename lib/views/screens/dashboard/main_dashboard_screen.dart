@@ -12,6 +12,7 @@ import 'package:person_app/views/screens/category/category_budget_screen.dart';
 import 'package:person_app/views/widgets/spending_bar_chart.dart';
 import 'package:person_app/views/widgets/category_pie_chart.dart';
 import 'package:person_app/data/models/season.dart';
+import 'package:person_app/views/screens/games/love_match_game_screen.dart';
 
 class MainDashboardScreen extends StatelessWidget {
   const MainDashboardScreen({super.key});
@@ -95,6 +96,9 @@ class MainDashboardScreen extends StatelessWidget {
             _aiAdvisorCard(aiResult),
 
             const SizedBox(height: 24),
+            // +++ LOVE MATCH MINI GAME +++
+            const LoveMatchDashboardCard(),
+
             // 3. Stats Rows
             Row(children: [
               Expanded(child: _statCard('Ngân sách', vm.totalBudgetFormatted, Icons.account_balance_wallet_outlined, Colors.indigo)),
